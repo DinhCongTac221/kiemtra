@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Luyện Dịch Nhật - Theo Thứ Tự</title>
+    <title>Luyện Dịch Nhật - Giao Diện Mới</title>
     <style>
-        :root { --primary: #3498db; --success: #2ecc71; --orange: #e67e22; --bg: #f0f2f5; }
+        :root { --primary: #3498db; --success: #2ecc71; --orange: #e67e22; --bg: #f0f2f5; --danger: #e74c3c; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); display: flex; justify-content: center; padding: 20px; }
         .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); width: 100%; max-width: 650px; }
         h2 { text-align: center; color: #2c3e50; margin-top: 0; }
@@ -14,53 +14,54 @@
         .hidden { display: none; }
         
         .vietnamese { font-size: 1.3rem; font-weight: bold; color: var(--orange); background: #fff5eb; padding: 20px; border-radius: 10px; margin-bottom: 15px; border-left: 5px solid var(--orange); }
-        textarea { width: 100%; height: 100px; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 1.1rem; box-sizing: border-box; resize: none; }
+        textarea { width: 100%; height: 100px; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 1.1rem; box-sizing: border-box; resize: none; margin-bottom: 10px; }
         textarea:focus { border-color: var(--primary); outline: none; }
 
-        .controls { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; min-width: 120px; }
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        button { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.95rem; }
+        
         .btn-check { background: var(--primary); color: white; }
-        .btn-next { background: #95a5a6; color: white; }
         .btn-learned { background: var(--success); color: white; }
-        .btn-reset { background: #e74c3c; color: white; font-size: 0.8rem; margin-top: 20px; width: 100%; }
+        .btn-reset-small { background: #bdc3c7; color: #2c3e50; font-size: 0.75rem; } /* Nút xóa nhỏ lại */
+        
+        .btn-next-large { width: 100%; background: #95a5a6; color: white; font-size: 1.1rem; padding: 15px; margin-top: 15px; } /* Nút câu tiếp theo dưới cùng */
 
         .result { margin-top: 15px; padding: 15px; border-radius: 10px; display: none; border: 1px solid transparent; }
         .correct { background: #d4edda; color: #155724; border-color: #c3e6cb; }
         .wrong { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
         .jp-hint { font-size: 1.4rem; font-weight: bold; display: block; margin-top: 8px; color: #000; }
         
-        .status-bar { display: flex; justify-content: space-between; margin-top: 15px; font-size: 0.9rem; color: #666; font-weight: bold; }
+        .status-bar { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: #666; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Học Tiếng Nhật (Theo thứ tự)</h2>
+    <h2>Học Tiếng Nhật</h2>
 
     <div id="upload-box" class="upload-section">
         <strong>Nạp file dữ liệu mới (.txt hoặc .csv)</strong><br>
         <input type="file" id="fileInput" accept=".txt,.csv" style="margin: 10px 0;">
-        <p style="font-size: 0.8rem; color: #888;">Định dạng: Câu Việt, Câu Nhật</p>
     </div>
 
     <div id="study-area" class="hidden">
         <div class="status-bar">
-            <span id="progress">Đang tải...</span>
-            <span id="learned-count" style="color: var(--success);">Đã thuộc: 0</span>
+            <span id="progress"></span>
+            <span id="learned-count" style="color: var(--success);"></span>
         </div>
 
         <div id="vi-text" class="vietnamese"></div>
         <textarea id="jp-input" placeholder="Gõ câu tiếng Nhật..."></textarea>
 
-        <div class="controls">
-            <button class="btn-check" onclick="checkAnswer()">Kiểm tra (Ctrl+Enter)</button>
-            <button class="btn-learned" onclick="markAsLearned()">Đã thuộc câu này</button>
-            <button class="btn-next" onclick="nextQuestion()">Câu tiếp theo</button>
+        <div class="controls-grid">
+            <button class="btn-check" onclick="checkAnswer()">Kiểm tra</button>
+            <button class="btn-learned" onclick="markAsLearned()">Đã thuộc</button>
+            <button class="btn-reset-small" onclick="resetData()">Xóa dữ liệu</button>
         </div>
 
         <div id="result-box" class="result"></div>
-        
-        <button class="btn-reset" onclick="resetData()">Xóa hết dữ liệu và nạp lại từ đầu</button>
+
+        <button class="btn-next-large" onclick="nextQuestion()">Câu tiếp theo ➔</button>
     </div>
 </div>
 
@@ -105,44 +106,41 @@
     function showStudyArea() {
         document.getElementById('upload-box').classList.add('hidden');
         document.getElementById('study-area').classList.remove('hidden');
-        currentIndex = 0; // Luôn bắt đầu từ câu đầu tiên
+        currentIndex = 0;
         loadQuestion();
         updateLearnedCount();
     }
 
     function loadQuestion() {
         if (flashcards.length === 0) {
-            document.getElementById('vi-text').innerText = "Chúc mừng! Bạn đã học hết tất cả các câu.";
+            document.getElementById('vi-text').innerText = "Bạn đã hoàn thành hết các câu!";
             document.getElementById('jp-input').classList.add('hidden');
             return;
         }
-        // Đảm bảo currentIndex không vượt quá mảng sau khi xóa câu
         if (currentIndex >= flashcards.length) currentIndex = 0;
-        
         document.getElementById('vi-text').innerText = flashcards[currentIndex].vi;
         document.getElementById('jp-input').value = "";
         document.getElementById('result-box').style.display = "none";
-        document.getElementById('progress').innerText = `Câu số: ${currentIndex + 1} (Còn lại ${flashcards.length} câu)`;
+        document.getElementById('progress').innerText = `Câu: ${currentIndex + 1} / ${flashcards.length}`;
     }
 
     function checkAnswer() {
         const userInput = document.getElementById('jp-input').value.trim();
         const correctAnswer = flashcards[currentIndex].jp;
         const resultBox = document.getElementById('result-box');
-
         if (userInput === correctAnswer) {
             resultBox.className = "result correct";
-            resultBox.innerHTML = "✅ Chính xác!<span class='jp-hint'>" + correctAnswer + "</span>";
+            resultBox.innerHTML = "✅ Đúng!<span class='jp-hint'>" + correctAnswer + "</span>";
         } else {
             resultBox.className = "result wrong";
-            resultBox.innerHTML = "❌ Chưa đúng. Đáp án là:<span class='jp-hint'>" + correctAnswer + "</span>";
+            resultBox.innerHTML = "❌ Đáp án:<span class='jp-hint'>" + correctAnswer + "</span>";
         }
         resultBox.style.display = "block";
     }
 
     function nextQuestion() {
         if (flashcards.length === 0) return;
-        currentIndex = (currentIndex + 1) % flashcards.length; // Chuyển sang câu tiếp theo theo thứ tự
+        currentIndex = (currentIndex + 1) % flashcards.length;
         loadQuestion();
     }
 
@@ -150,14 +148,10 @@
         flashcards.splice(currentIndex, 1);
         saveToLocal();
         updateLearnedCount();
-        
         if (flashcards.length > 0) {
-            // Sau khi xóa, không cần tăng currentIndex vì câu tiếp theo đã tự nhảy vào vị trí đó
             if (currentIndex >= flashcards.length) currentIndex = 0;
             loadQuestion();
-        } else {
-            loadQuestion();
-        }
+        } else { loadQuestion(); }
     }
 
     function updateLearnedCount() {
@@ -166,7 +160,7 @@
     }
 
     function resetData() {
-        if (confirm("Xóa toàn bộ tiến trình và nạp lại file mới?")) {
+        if (confirm("Xóa sạch dữ liệu để nạp file mới?")) {
             localStorage.clear();
             location.reload();
         }
