@@ -3,29 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Học Tiếng Nhật Cùng Gemini 2.5</title>
+    <title>Trợ Lý Ngữ Pháp Gemini 2.5</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #34a853; --bg: #f8f9fa; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 500px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); min-height: 90vh; display: flex; flex-direction: column; box-sizing: border-box; }
-        
-        .header h2 { margin: 0 0 15px 0; color: var(--primary); font-size: 18px; text-align: center; }
+        .container { width: 100%; max-width: 480px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); min-height: 90vh; display: flex; flex-direction: column; box-sizing: border-box; }
+        .header h2 { margin: 0 0 10px 0; color: var(--primary); font-size: 18px; text-align: center; }
         #status { font-size: 11px; text-align: center; color: #d93025; margin-bottom: 8px; font-weight: bold; min-height: 15px; }
-
         .btn-group { display: flex; gap: 8px; margin-bottom: 12px; }
-        .btn-mic { flex: 2; padding: 12px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; border-radius: 12px; background: var(--primary); color: white; transition: 0.2s; }
+        .btn-mic { flex: 2; padding: 12px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; border-radius: 12px; background: var(--primary); color: white; }
         .btn-send { flex: 1; padding: 12px; font-size: 14px; font-weight: bold; background: var(--secondary); color: white; border: none; border-radius: 12px; cursor: pointer; }
         .recording { background: #d93025 !important; animation: pulse 1.2s infinite; }
-        
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-
-        .label { font-size: 10px; font-weight: bold; color: #70757a; text-transform: uppercase; margin-bottom: 5px; display: block; }
-        
-        textarea { width: 100%; height: 80px; padding: 12px; border: 1px solid #dadce0; border-radius: 10px; font-size: 16px; box-sizing: border-box; resize: none; outline: none; margin-bottom: 15px; background: #fff; }
-
-        .response-area { padding: 15px; background: #f1f3f4; border-radius: 15px; flex-grow: 1; border-left: 5px solid var(--secondary); position: relative; overflow-y: auto; }
-        .response-text { font-size: 17px; line-height: 1.5; color: #202124; white-space: pre-wrap; font-weight: 500; }
-        
+        textarea { width: 100%; height: 80px; padding: 12px; border: 1px solid #dadce0; border-radius: 10px; font-size: 16px; box-sizing: border-box; resize: none; outline: none; margin-bottom: 15px; }
+        .response-area { padding: 15px; background: #f1f3f4; border-radius: 15px; flex-grow: 1; border-left: 5px solid var(--secondary); position: relative; }
+        .response-text { font-size: 16px; line-height: 1.5; color: #202124; white-space: pre-wrap; font-weight: 500; }
         .speaker-btn { position: absolute; right: 10px; top: 10px; background: white; border: 1px solid #ddd; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
@@ -36,26 +28,20 @@
         <h2>Trợ Lý Tiếng Nhật Gemini 2.5</h2>
         <div id="status"></div>
     </div>
-
     <div class="btn-group">
         <button id="micBtn" class="btn-mic" onclick="toggleMic()">🎤 Nhấn để nói</button>
         <button class="btn-send" onclick="askGemini()">Gửi AI →</button>
     </div>
-
-    <span class="label">Câu hỏi (Có thể sửa chính tả):</span>
-    <textarea id="userInput" placeholder="Ví dụ: Cách chia thể Masu sang thể Te..."></textarea>
-
+    <textarea id="userInput" placeholder="Ví dụ: Cách chia thể Te..."></textarea>
     <div class="response-area">
-        <span class="label">Giải đáp ngắn gọn:</span>
-        <div id="aiResponse" class="response-text">Câu trả lời sẽ hiện ở đây...</div>
-        <button class="speaker-btn" onclick="speakResult()" title="Phát âm tiếng Nhật">🔊</button>
+        <div id="aiResponse" class="response-text">Kết quả sẽ hiện ở đây...</div>
+        <button class="speaker-btn" onclick="speakResult()">🔊</button>
     </div>
 </div>
 
 <script>
-    // --- CẤU HÌNH DỰA TRÊN LISTMODELS CỦA BẠN ---
     const API_KEY = "AIzaSyDzeg7qU9k-vaRO2Ol8Qu9iwWyFW_IRU3o"; 
-    const MODEL_ID = "gemini-2.5-flash"; //
+    const MODEL_ID = "gemini-2.5-flash"; 
     const URL = `https://generativelanguage.googleapis.com/v1/models/${MODEL_ID}:generateContent?key=${API_KEY}`;
 
     let isRecording = false;
@@ -65,7 +51,7 @@
     function toggleMic() {
         if (!isRecording) {
             recognition.start();
-            document.getElementById('micBtn').innerText = "🔴 Đang nghe... Bấm để dừng";
+            document.getElementById('micBtn').innerText = "🔴 Đang nghe...";
             document.getElementById('micBtn').classList.add('recording');
             isRecording = true;
         } else {
@@ -89,13 +75,16 @@
         const status = document.getElementById('status');
 
         if (!question.trim()) return;
-
-        status.innerText = "⏳ AI đang xử lý...";
+        status.innerText = "⏳ Đang liệt kê quy tắc...";
         responseBox.innerText = "Đang tải...";
 
-        const prompt = `Bạn là chuyên gia tiếng Nhật. Câu hỏi: "${question}". 
-        Yêu cầu: Trả lời tóm tắt cực ngắn quy tắc ngữ pháp. Chỉ đưa ra công thức/gạch đầu dòng. 
-        Tuyệt đối không giải thích dài dòng, không chào hỏi. Trả về văn bản sạch.`;
+        // PROMPT MỚI: Ép AI liệt kê đầy đủ tất cả các nhóm
+        const prompt = `Bạn là chuyên gia ngữ pháp tiếng Nhật. Hãy trả lời câu hỏi: "${question}". 
+        YÊU CẦU BẮT BUỘC: 
+        1. Liệt kê đầy đủ tất cả các nhóm động từ (Nhóm 1, 2, 3) và các trường hợp đặc biệt.
+        2. Định dạng gạch đầu dòng cực ngắn gọn. 
+        3. Không giải thích, không chào hỏi, không kết bài. 
+        4. Trình bày như một bảng tra cứu nhanh.`;
 
         try {
             const response = await fetch(URL, {
@@ -104,27 +93,18 @@
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: prompt }] }],
                     generationConfig: { 
-                        temperature: 0.1, // Giảm sáng tạo để trả lời thẳng vấn đề
-                        maxOutputTokens: 800 
+                        temperature: 0, // Đặt bằng 0 để kết quả luôn đồng nhất và chính xác
+                        maxOutputTokens: 1000 
                     }
                 })
             });
 
             const data = await response.json();
-            
-            if (data.error) {
-                status.innerText = "❌ Lỗi: " + data.error.message;
-                responseBox.innerText = "Kiểm tra lại quyền truy cập của API Key.";
-                return;
-            }
-
             const result = data.candidates[0].content.parts[0].text.trim().replace(/\*/g, '');
             responseBox.innerText = result;
             status.innerText = "";
-
         } catch (err) {
             status.innerText = "❌ Lỗi kết nối!";
-            responseBox.innerText = "Không thể kết nối đến máy chủ Google.";
         }
     }
 
@@ -136,6 +116,5 @@
         window.speechSynthesis.speak(utter);
     }
 </script>
-
 </body>
 </html>
