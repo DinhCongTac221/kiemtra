@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dịch Giọng Nói Tối Ưu</title>
+    <title>Dịch & Chỉnh Sửa</title>
     <style>
         :root { --bg: #f4f7f6; --card: #ffffff; --vi: #ea4335; --ja: #1a73e8; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
@@ -14,7 +14,6 @@
             min-height: 85vh; display: flex; flex-direction: column; 
         }
 
-        /* Chỉnh 2 nút bé lại và nằm cùng hàng */
         .button-group { display: flex; gap: 10px; margin-bottom: 10px; }
         
         .btn { 
@@ -36,17 +35,21 @@
             position: relative; flex-grow: 1;
         }
         
-        .label { font-size: 10px; color: #70757a; text-transform: uppercase; font-weight: 700; }
+        .label { font-size: 10px; color: #70757a; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 5px; }
         
-        /* Chữ Nguồn vừa phải */
-        .text-source { font-size: 18px; color: #5f6368; display: block; margin-top: 5px; line-height: 1.4; }
+        /* Cho phép chỉnh sửa văn bản nguồn */
+        .editable-text {
+            width: 100%; border: 1px dashed #ccc; border-radius: 8px;
+            padding: 8px; font-size: 18px; color: #5f6368; line-height: 1.4;
+            background: #fff; box-sizing: border-box; outline: none;
+            min-height: 60px; margin-bottom: 15px; display: block;
+        }
+        .editable-text:focus { border-color: var(--ja); background: #f0f7ff; }
         
-        /* Chữ Dịch to rõ rệt */
         .text-target { 
-            font-size: 32px; /* Tăng kích thước chữ kết quả */
-            color: #188038; font-weight: 800; display: block; 
-            margin-top: 10px; line-height: 1.3; padding-right: 45px; 
-            word-break: break-word;
+            font-size: 32px; color: #188038; font-weight: 800; 
+            display: block; margin-top: 10px; line-height: 1.3; 
+            padding-right: 45px; word-break: break-word;
         }
 
         .play-btn { 
@@ -61,7 +64,7 @@
 <body>
 
 <div class="container">
-    <h2 style="margin:0 0 10px 0; font-size: 18px; text-align: center;">Trình dịch song ngữ</h2>
+    <h2 style="margin:0 0 10px 0; font-size: 18px; text-align: center;">Dịch & Chỉnh sửa chính tả</h2>
     <div id="status">Sẵn sàng</div>
     
     <div class="button-group">
@@ -70,9 +73,11 @@
     </div>
 
     <div class="result-area">
-        <span class="label">Nguồn:</span>
-        <span id="originalText" class="text-source">...</span>
-        <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
+        <span class="label">Nguồn (Có thể gõ để sửa):</span>
+        <textarea id="originalText" class="editable-text" oninput="manualUpdate()" placeholder="Nội dung nói sẽ hiện ở đây..."></textarea>
+        
+        <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+        
         <span class="label">Kết quả dịch:</span>
         <span id="translatedText" class="text-target">...</span>
         <button class="play-btn" onclick="replayAudio()">🔊</button>
@@ -83,8 +88,9 @@
     let isRecording = false;
     let lastResult = "";
     let lastTargetLang = "";
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    let typingTimer; // Biến chờ người dùng gõ xong mới dịch
     
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.continuous = true;
     recognition.interimResults = false;
 
@@ -99,7 +105,7 @@
             recognition.lang = langIn;
             recognition.start();
             isRecording = true;
-            document.getElementById('status').innerText = "🔴 ĐANG NGHE... BẤM LẠI ĐỂ DỪNG";
+            document.getElementById('status').innerText = "🔴 ĐANG NGHE...";
             
             if(langIn === 'vi-VN') {
                 btnVI.innerText = "DỪNG";
@@ -117,19 +123,36 @@
 
     recognition.onresult = (event) => {
         const transcript = event.results[event.results.length - 1][0].transcript;
-        document.getElementById('originalText').innerText = transcript;
+        document.getElementById('originalText').value = transcript;
         translateMyMemory(transcript, srcLang, targetLang);
     };
 
+    // Hàm xử lý khi người dùng tự gõ sửa
+    function manualUpdate() {
+        clearTimeout(typingTimer);
+        const text = document.getElementById('originalText').value;
+        if (!text) return;
+
+        document.getElementById('status').innerText = "✍️ Bạn đang chỉnh sửa...";
+        // Chờ 1 giây sau khi ngừng gõ mới tự động dịch lại
+        typingTimer = setTimeout(() => {
+            translateMyMemory(text, srcLang || 'vi-VN', targetLang || 'ja');
+        }, 1000);
+    }
+
     recognition.onend = () => {
         isRecording = false;
+        resetUI();
+    };
+
+    function resetUI() {
         document.getElementById('btnVI').innerText = "🇻🇳 Tiếng Việt";
         document.getElementById('btnJA').innerText = "🇯🇵 Tiếng Nhật";
         document.getElementById('btnVI').classList.remove('btn-stop');
         document.getElementById('btnJA').classList.remove('btn-stop');
         document.getElementById('btnVI').style.visibility = 'visible';
         document.getElementById('btnJA').style.visibility = 'visible';
-    };
+    }
 
     async function translateMyMemory(text, from, to) {
         document.getElementById('status').innerText = "⏳ Đang dịch...";
@@ -141,11 +164,12 @@
             let result = data.responseData.translatedText;
 
             document.getElementById('translatedText').innerText = result;
-            document.getElementById('status').innerText = "✅ Xong!";
+            document.getElementById('status').innerText = "✅ Đã cập nhật!";
             
             lastResult = result;
             lastTargetLang = to;
-            replayAudio(); 
+            // Chỉ tự động phát âm nếu không phải đang gõ tay (để tránh phiền)
+            if (!isRecording) replayAudio(); 
 
         } catch (err) {
             document.getElementById('status').innerText = "❌ Lỗi kết nối";
@@ -154,6 +178,7 @@
 
     function replayAudio() {
         if (!lastResult) return;
+        window.speechSynthesis.cancel(); // Dừng các âm thanh đang phát cũ
         const speak = new SpeechSynthesisUtterance(lastResult);
         speak.lang = lastTargetLang === 'ja' ? 'ja-JP' : 'vi-VN';
         window.speechSynthesis.speak(speak);
