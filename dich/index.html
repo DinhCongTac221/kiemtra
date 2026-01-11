@@ -3,53 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Siêu Dịch Thuật Gemini 2.5</title>
+    <title>Dịch Giọng Nói Tối Ưu</title>
     <style>
-        :root { --bg: #f0f2f5; --card: #ffffff; --vi: #ea4335; --ja: #1a73e8; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 450px; background: var(--card); padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); min-height: 85vh; display: flex; flex-direction: column; }
-        h2 { font-size: 22px; margin: 0 0 10px 0; color: #202124; }
-        #status { height: 30px; font-size: 13px; color: #5f6368; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; }
+        :root { --bg: #f4f7f6; --card: #ffffff; --vi: #ea4335; --ja: #1a73e8; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
         
-        .btn { width: 100%; padding: 20px; font-size: 17px; font-weight: bold; cursor: pointer; border: none; border-radius: 16px; margin: 8px 0; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
-        .btn-vi { background: var(--vi); color: white; }
-        .btn-ja { background: var(--ja); color: white; }
-        .btn-stop { background: #3c4043 !important; color: white; animation: pulse 1.2s infinite; }
+        .container { 
+            width: 100%; max-width: 450px; background: var(--card); 
+            padding: 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            min-height: 85vh; display: flex; flex-direction: column; 
+        }
+
+        /* Chỉnh 2 nút bé lại và nằm cùng hàng */
+        .button-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        
+        .btn { 
+            flex: 1; padding: 12px 5px; font-size: 14px; font-weight: bold; 
+            cursor: pointer; border: none; border-radius: 12px; transition: 0.2s; 
+            color: white; -webkit-tap-highlight-color: transparent;
+        }
+        .btn-vi { background: var(--vi); }
+        .btn-ja { background: var(--ja); }
+        .btn-stop { background: #3c4043 !important; animation: pulse 1.2s infinite; }
         
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        #status { height: 25px; font-size: 12px; color: #5f6368; font-weight: bold; text-align: center; margin-bottom: 10px; }
         
-        .result-area { background: #f8f9fa; border-radius: 18px; padding: 18px; text-align: left; margin-top: auto; border: 1px solid #e8eaed; }
-        .label { font-size: 10px; color: #70757a; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
-        .text { font-size: 20px; color: #202124; display: block; margin-top: 8px; line-height: 1.4; min-height: 1.4em; }
-        #translatedText { color: #188038; font-weight: 700; }
+        .result-area { 
+            background: #f8f9fa; border-radius: 18px; padding: 18px; 
+            text-align: left; margin-top: 10px; border: 1px solid #e8eaed; 
+            position: relative; flex-grow: 1;
+        }
+        
+        .label { font-size: 10px; color: #70757a; text-transform: uppercase; font-weight: 700; }
+        
+        /* Chữ Nguồn vừa phải */
+        .text-source { font-size: 18px; color: #5f6368; display: block; margin-top: 5px; line-height: 1.4; }
+        
+        /* Chữ Dịch to rõ rệt */
+        .text-target { 
+            font-size: 32px; /* Tăng kích thước chữ kết quả */
+            color: #188038; font-weight: 800; display: block; 
+            margin-top: 10px; line-height: 1.3; padding-right: 45px; 
+            word-break: break-word;
+        }
+
+        .play-btn { 
+            position: absolute; right: 15px; bottom: 15px; 
+            background: white; border: 1px solid #ddd; border-radius: 50%; 
+            width: 45px; height: 45px; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; font-size: 22px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Dịch Giọng Nói</h2>
+    <h2 style="margin:0 0 10px 0; font-size: 18px; text-align: center;">Trình dịch song ngữ</h2>
     <div id="status">Sẵn sàng</div>
     
-    <button id="btnVI" class="btn btn-vi" onclick="toggleRecognition('vi-VN', 'ja')">🇻🇳 Nói tiếng Việt</button>
-    <button id="btnJA" class="btn btn-ja" onclick="toggleRecognition('ja-JP', 'vi')">🇯🇵 Nói tiếng Nhật</button>
+    <div class="button-group">
+        <button id="btnVI" class="btn btn-vi" onclick="toggleRecognition('vi-VN', 'ja')">🇻🇳 Tiếng Việt</button>
+        <button id="btnJA" class="btn btn-ja" onclick="toggleRecognition('ja-JP', 'vi')">🇯🇵 Tiếng Nhật</button>
+    </div>
 
     <div class="result-area">
         <span class="label">Nguồn:</span>
-        <span id="originalText" class="text">...</span>
-        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
-        <span class="label">Dịch (Ngắn gọn):</span>
-        <span id="translatedText" class="text">...</span>
+        <span id="originalText" class="text-source">...</span>
+        <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
+        <span class="label">Kết quả dịch:</span>
+        <span id="translatedText" class="text-target">...</span>
+        <button class="play-btn" onclick="replayAudio()">🔊</button>
     </div>
 </div>
 
 <script>
-    // 1. CẤU HÌNH API
-    const API_KEY = "AIzaSyDlASALYkTd42wto5fkpeUMA8wATm0o0KQ"; 
-    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
-
     let isRecording = false;
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
+    let lastResult = "";
+    let lastTargetLang = "";
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     
     recognition.continuous = true;
     recognition.interimResults = false;
@@ -65,14 +99,14 @@
             recognition.lang = langIn;
             recognition.start();
             isRecording = true;
-            document.getElementById('status').innerText = "🔴 ĐANG NGHE... NHẤN NÚT ĐỂ DỪNG";
+            document.getElementById('status').innerText = "🔴 ĐANG NGHE... BẤM LẠI ĐỂ DỪNG";
             
             if(langIn === 'vi-VN') {
-                btnVI.innerText = "DỪNG VÀ DỊCH NGAY";
+                btnVI.innerText = "DỪNG";
                 btnVI.classList.add('btn-stop');
                 btnJA.style.visibility = 'hidden';
             } else {
-                btnJA.innerText = "DỪNG VÀ DỊCH NGAY";
+                btnJA.innerText = "DỪNG";
                 btnJA.classList.add('btn-stop');
                 btnVI.style.visibility = 'hidden';
             }
@@ -84,56 +118,45 @@
     recognition.onresult = (event) => {
         const transcript = event.results[event.results.length - 1][0].transcript;
         document.getElementById('originalText').innerText = transcript;
-        callGemini(transcript);
+        translateMyMemory(transcript, srcLang, targetLang);
     };
 
     recognition.onend = () => {
         isRecording = false;
-        resetUI();
+        document.getElementById('btnVI').innerText = "🇻🇳 Tiếng Việt";
+        document.getElementById('btnJA').innerText = "🇯🇵 Tiếng Nhật";
+        document.getElementById('btnVI').classList.remove('btn-stop');
+        document.getElementById('btnJA').classList.remove('btn-stop');
+        document.getElementById('btnVI').style.visibility = 'visible';
+        document.getElementById('btnJA').style.visibility = 'visible';
     };
 
-    function resetUI() {
-        const btnVI = document.getElementById('btnVI');
-        const btnJA = document.getElementById('btnJA');
-        btnVI.innerText = "🇻🇳 Nói tiếng Việt";
-        btnJA.innerText = "🇯🇵 Nói tiếng Nhật";
-        btnVI.classList.remove('btn-stop');
-        btnJA.classList.remove('btn-stop');
-        btnVI.style.visibility = 'visible';
-        btnJA.style.visibility = 'visible';
-    }
-
-    async function callGemini(text) {
+    async function translateMyMemory(text, from, to) {
         document.getElementById('status').innerText = "⏳ Đang dịch...";
+        const langPair = `${from.split('-')[0]}|${to}`;
         
-        // Prompt cực ngắn để AI phản hồi nhanh
-        const prompt = targetLang === 'ja' 
-            ? `Dịch sang tiếng Nhật (KHÔNG KANJI, CHỈ HIRAGANA/KATAKANA): "${text}". Trả về duy nhất câu dịch.`
-            : `Dịch sang tiếng Việt ngắn gọn: "${text}". Trả về duy nhất câu dịch, không giải thích.`;
-
         try {
-            const response = await fetch(GEMINI_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0, topP: 1, maxOutputTokens: 100 }
-                })
-            });
-
+            const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}`);
             const data = await response.json();
-            let result = data.candidates[0].content.parts[0].text.trim().replace(/\*/g, '');
-            
+            let result = data.responseData.translatedText;
+
             document.getElementById('translatedText').innerText = result;
             document.getElementById('status').innerText = "✅ Xong!";
             
-            const speak = new SpeechSynthesisUtterance(result);
-            speak.lang = targetLang === 'ja' ? 'ja-JP' : 'vi-VN';
-            window.speechSynthesis.speak(speak);
+            lastResult = result;
+            lastTargetLang = to;
+            replayAudio(); 
 
         } catch (err) {
             document.getElementById('status').innerText = "❌ Lỗi kết nối";
         }
+    }
+
+    function replayAudio() {
+        if (!lastResult) return;
+        const speak = new SpeechSynthesisUtterance(lastResult);
+        speak.lang = lastTargetLang === 'ja' ? 'ja-JP' : 'vi-VN';
+        window.speechSynthesis.speak(speak);
     }
 </script>
 
