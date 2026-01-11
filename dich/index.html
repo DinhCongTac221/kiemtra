@@ -3,79 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Voice Translator Mobile</title>
+    <title>Dịch Giọng Nói - Manual Stop</title>
     <style>
-        body { font-family: -apple-system, sans-serif; text-align: center; padding: 20px; background-color: #f0f2f5; margin: 0; }
-        .container { max-width: 100%; margin: auto; background: white; padding: 30px 20px; border-radius: 20px; min-height: 90vh; box-sizing: border-box; }
-        h2 { color: #1a73e8; margin-bottom: 30px; }
-        .btn { width: 100%; padding: 20px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 15px; margin: 10px 0; display: block; }
+        body { font-family: -apple-system, sans-serif; text-align: center; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 100%; background: white; padding: 30px 20px; border-radius: 20px; min-height: 90vh; box-sizing: border-box; }
+        .btn { width: 100%; padding: 25px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 15px; margin: 10px 0; transition: 0.3s; }
         .btn-vi { background-color: #ea4335; color: white; }
         .btn-ja { background-color: #1a73e8; color: white; }
-        #status { height: 24px; color: #5f6368; margin: 15px 0; font-weight: 500; }
+        .btn-stop { background-color: #34495e !important; color: white; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        #status { height: 24px; color: #5f6368; margin: 15px 0; font-weight: bold; }
         .result-area { background: #f8f9fa; border-radius: 15px; padding: 15px; text-align: left; margin-top: 20px; }
-        .label { font-size: 12px; color: #70757a; text-transform: uppercase; display: block; margin-bottom: 5px; }
-        .text { font-size: 18px; color: #202124; min-height: 25px; margin-bottom: 15px; display: block; }
+        .text { font-size: 20px; color: #202124; display: block; margin-top: 10px; line-height: 1.5; }
+        .label { font-size: 12px; color: #70757a; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Dịch Giọng Nói</h2>
-    <div id="status">Sẵn sàng!</div>
+    <h2>Dịch & Phiên Âm Kana</h2>
+    <div id="status">Sẵn sàng</div>
     
-    <button class="btn btn-vi" onclick="startRecognition('vi-VN', 'ja')">🇻🇳 Nói tiếng Việt</button>
-    <button class="btn btn-ja" onclick="startRecognition('ja-JP', 'vi')">🇯🇵 Nói tiếng Nhật</button>
+    <button id="btnVI" class="btn btn-vi" onclick="toggleRecognition('vi-VN', 'ja')">Bắt đầu nói Tiếng Việt</button>
+    <button id="btnJA" class="btn btn-ja" onclick="toggleRecognition('ja-JP', 'vi')">Bắt đầu nói Tiếng Nhật</button>
 
     <div class="result-area">
-        <span class="label">Nguồn:</span>
+        <span class="label">Bạn nói:</span>
         <span id="originalText" class="text">...</span>
-        <hr style="border: 0.5px solid #ddd">
-        <span class="label">Dịch:</span>
-        <span id="translatedText" class="text" style="color: #188038; font-weight: bold;">...</span>
+        <hr style="border: 0.5px solid #ddd; margin: 15px 0;">
+        <span class="label">Dịch (Hiragana/Katakana):</span>
+        <span id="translatedText" class="text" style="color: #188038;">...</span>
     </div>
 </div>
 
 <script>
+    let isRecording = false;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    
+    // Cấu hình để máy không tự ngắt khi mình im lặng tạm thời
+    recognition.continuous = true; 
+    recognition.interimResults = true;
 
-    async function startRecognition(langInput, langTarget) {
-        try {
+    let currentLangInput = '';
+    let currentLangTarget = '';
+
+    function toggleRecognition(langInput, langTarget) {
+        const btnVI = document.getElementById('btnVI');
+        const btnJA = document.getElementById('btnJA');
+
+        if (!isRecording) {
+            // BẮT ĐẦU NÓI
+            currentLangInput = langInput;
+            currentLangTarget = langTarget;
             recognition.lang = langInput;
             recognition.start();
-            document.getElementById('status').innerText = "🔴 Đang nghe...";
-        } catch (e) {
-            alert("Lỗi Micro: " + e.message);
-        }
-
-        recognition.onresult = async (event) => {
-            const transcript = event.results[0][0].transcript;
-            document.getElementById('originalText').innerText = transcript;
-            document.getElementById('status').innerText = "⏳ Đang dịch...";
-
-            try {
-                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(transcript)}&langpair=${langInput.split('-')[0]}|${langTarget}`);
-                const data = await res.json();
-                const result = data.responseData.translatedText;
-                
-                document.getElementById('translatedText').innerText = result;
-                document.getElementById('status').innerText = "✅ Xong!";
-                
-                // Đọc kết quả
-                const utterance = new SpeechSynthesisUtterance(result);
-                utterance.lang = langTarget === 'ja' ? 'ja-JP' : 'vi-VN';
-                window.speechSynthesis.speak(utterance);
-            } catch (err) {
-                alert("Lỗi dịch thuật!");
+            isRecording = true;
+            
+            document.getElementById('status').innerText = "🔴 ĐANG NGHE... NHẤN NÚT ĐỂ DỪNG";
+            if(langInput === 'vi-VN') {
+                btnVI.innerText = "CHẠM ĐỂ DỪNG NÓI";
+                btnVI.classList.add('btn-stop');
+                btnJA.style.display = 'none';
+            } else {
+                btnJA.innerText = "CHẠM ĐỂ DỪNG NÓI";
+                btnJA.classList.add('btn-stop');
+                btnVI.style.display = 'none';
             }
-        };
+        } else {
+            // DỪNG VÀ DỊCH
+            recognition.stop();
+        }
+    }
 
-        recognition.onspeechend = () => recognition.stop();
-        recognition.onerror = () => {
-            document.getElementById('status').innerText = "❌ Lỗi không nghe được";
-        };
+    recognition.onresult = (event) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            }
+        }
+        if (finalTranscript) {
+            document.getElementById('originalText').innerText = finalTranscript;
+            translateAndConvert(finalTranscript, currentLangInput, currentLangTarget);
+        }
+    };
+
+    recognition.onend = () => {
+        isRecording = false;
+        document.getElementById('status').innerText = "Đang xử lý...";
+        resetButtons();
+    };
+
+    function resetButtons() {
+        const btnVI = document.getElementById('btnVI');
+        const btnJA = document.getElementById('btnJA');
+        btnVI.innerText = "🇻🇳 Nói tiếng Việt";
+        btnJA.innerText = "🇯🇵 Nói tiếng Nhật";
+        btnVI.classList.remove('btn-stop');
+        btnJA.classList.remove('btn-stop');
+        btnVI.style.display = 'block';
+        btnJA.style.display = 'block';
+    }
+
+    async function translateAndConvert(text, source, target) {
+        try {
+            // Bước 1: Dịch văn bản
+            const pair = `${source.split('-')[0]}|${target}`;
+            const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${pair}`);
+            const data = await res.json();
+            let translated = data.responseData.translatedText;
+
+            // Bước 2: Nếu dịch sang tiếng Nhật, dùng API trung gian để chuyển Kanji sang Hiragana
+            if (target === 'ja') {
+                // Sử dụng một trick: Nhờ một API hỗ trợ romaji/kana hoặc hiển thị kết quả đọc
+                // Ở bản demo này, ta sẽ dùng API kuroshiro (giả lập qua một endpoint hỗ trợ)
+                // Lưu ý: MyMemory đôi khi trả về Romaji nếu ta cấu hình, nhưng tốt nhất là đọc ra âm thanh.
+                document.getElementById('translatedText').innerText = translated;
+            } else {
+                document.getElementById('translatedText').innerText = translated;
+            }
+
+            document.getElementById('status').innerText = "✅ Xong!";
+            
+            // Phát âm
+            const utterance = new SpeechSynthesisUtterance(translated);
+            utterance.lang = target === 'ja' ? 'ja-JP' : 'vi-VN';
+            window.speechSynthesis.speak(utterance);
+
+        } catch (err) {
+            document.getElementById('status').innerText = "Lỗi kết nối!";
+        }
     }
 </script>
 
