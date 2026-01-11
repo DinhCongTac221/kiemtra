@@ -3,48 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gemini Voice Translator</title>
+    <title>Gemini Voice Translator - No Kanji</title>
     <style>
-        body { font-family: -apple-system, sans-serif; text-align: center; background-color: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 30px 20px; border-radius: 20px; min-height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .btn { width: 100%; padding: 20px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 15px; margin: 10px 0; transition: 0.3s; }
-        .btn-vi { background-color: #ea4335; color: white; }
-        .btn-ja { background-color: #1a73e8; color: white; }
-        .btn-stop { background-color: #34495e !important; color: white; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-        #status { height: 24px; color: #5f6368; margin: 15px 0; font-weight: bold; font-size: 14px; }
-        .result-area { background: #f8f9fa; border-radius: 15px; padding: 15px; text-align: left; margin-top: 20px; }
-        .text { font-size: 20px; color: #202124; display: block; margin-top: 10px; line-height: 1.6; }
-        .label { font-size: 11px; color: #70757a; text-transform: uppercase; letter-spacing: 1px; }
+        :root { --primary: #1a73e8; --danger: #ea4335; --dark: #34495e; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; background-color: #f8f9fa; margin: 0; padding: env(safe-area-inset-top) 20px; }
+        .container { max-width: 500px; margin: 20px auto; background: white; padding: 30px 20px; border-radius: 24px; min-height: 85vh; box-shadow: 0 10px 30px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
+        h2 { color: #202124; font-size: 24px; margin-bottom: 5px; }
+        #status { height: 40px; color: #5f6368; font-size: 14px; display: flex; align-items: center; justify-content: center; font-weight: 500; margin-bottom: 10px; }
+        
+        .btn { width: 100%; padding: 22px; font-size: 18px; font-weight: 600; cursor: pointer; border: none; border-radius: 18px; margin: 10px 0; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+        .btn-vi { background-color: var(--danger); color: white; }
+        .btn-ja { background-color: var(--primary); color: white; }
+        .btn-stop { background-color: var(--dark) !important; color: white; animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(0.98); opacity: 0.8; } 100% { transform: scale(1); } }
+        
+        .result-area { background: #f1f3f4; border-radius: 20px; padding: 20px; text-align: left; margin-top: auto; }
+        .label { font-size: 11px; color: #70757a; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+        .text { font-size: 22px; color: #202124; display: block; margin-top: 8px; line-height: 1.5; min-height: 1.5em; word-break: break-word; }
+        #translatedText { color: #188038; font-weight: bold; }
+        
+        .error-log { font-size: 12px; color: #d93025; margin-top: 10px; display: none; padding: 10px; background: #fce8e6; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Gemini Translator</h2>
-    <div id="status">Sẵn sàng</div>
+    <h2>Dịch Giọng Nói AI</h2>
+    <div id="status">Sẵn sàng sử dụng</div>
     
     <button id="btnVI" class="btn btn-vi" onclick="toggleRecognition('vi-VN', 'ja')">🇻🇳 Nói tiếng Việt</button>
     <button id="btnJA" class="btn btn-ja" onclick="toggleRecognition('ja-JP', 'vi')">🇯🇵 Nói tiếng Nhật</button>
 
+    <div id="errorLog" class="error-log"></div>
+
     <div class="result-area">
         <span class="label">Nguồn:</span>
         <span id="originalText" class="text">...</span>
-        <hr style="border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
-        <span class="label">Kết quả (Dạng chữ dễ đọc):</span>
-        <span id="translatedText" class="text" style="color: #188038;">...</span>
+        <hr style="border: 0; border-top: 1px solid #dadce0; margin: 20px 0;">
+        <span class="label">Dịch (Hiragana/Katakana):</span>
+        <span id="translatedText" class="text">...</span>
     </div>
 </div>
 
 <script>
-    // --- CẤU HÌNH GEMINI ---
+    // ==========================================
+    // 1. CẤU HÌNH API KEY CỦA BẠN TẠI ĐÂY
+    // ==========================================
     const API_KEY = "AIzaSyDlASALYkTd42wto5fkpeUMA8wATm0o0KQ"; 
     const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
     let isRecording = false;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
     
+    if (!SpeechRecognition) {
+        document.getElementById('status').innerText = "Trình duyệt không hỗ trợ Voice API";
+    }
+
+    const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = false;
 
@@ -54,25 +70,34 @@
     function toggleRecognition(langInput, langTarget) {
         const btnVI = document.getElementById('btnVI');
         const btnJA = document.getElementById('btnJA');
+        const status = document.getElementById('status');
 
         if (!isRecording) {
-            currentLangInput = langInput;
-            currentLangTarget = langTarget;
-            recognition.lang = langInput;
-            recognition.start();
-            isRecording = true;
-            
-            document.getElementById('status').innerText = "🔴 ĐANG NGHE... BẤM NÚT NÀY ĐỂ DỪNG";
-            if(langInput === 'vi-VN') {
-                btnVI.innerText = "DỪNG VÀ DỊCH";
-                btnVI.classList.add('btn-stop');
-                btnJA.style.visibility = 'hidden';
-            } else {
-                btnJA.innerText = "DỪNG VÀ DỊCH";
-                btnJA.classList.add('btn-stop');
-                btnVI.style.visibility = 'hidden';
+            // BẮT ĐẦU NGHE
+            try {
+                currentLangInput = langInput;
+                currentLangTarget = langTarget;
+                recognition.lang = langInput;
+                recognition.start();
+                isRecording = true;
+                
+                status.innerText = "🔴 ĐANG NGHE... BẤM NÚT ĐỂ DỪNG";
+                document.getElementById('errorLog').style.display = 'none';
+
+                if(langInput === 'vi-VN') {
+                    btnVI.innerText = "CHẠM ĐỂ DỪNG";
+                    btnVI.classList.add('btn-stop');
+                    btnJA.style.display = 'none';
+                } else {
+                    btnJA.innerText = "CHẠM ĐỂ DỪNG";
+                    btnJA.classList.add('btn-stop');
+                    btnVI.style.display = 'none';
+                }
+            } catch (e) {
+                alert("Không thể khởi động Micro: " + e.message);
             }
         } else {
+            // DỪNG LẠI ĐỂ XỬ LÝ
             recognition.stop();
         }
     }
@@ -88,6 +113,12 @@
         resetButtons();
     };
 
+    recognition.onerror = (event) => {
+        document.getElementById('status').innerText = "❌ Lỗi Micro: " + event.error;
+        isRecording = false;
+        resetButtons();
+    };
+
     function resetButtons() {
         const btnVI = document.getElementById('btnVI');
         const btnJA = document.getElementById('btnJA');
@@ -95,18 +126,24 @@
         btnJA.innerText = "🇯🇵 Nói tiếng Nhật";
         btnVI.classList.remove('btn-stop');
         btnJA.classList.remove('btn-stop');
-        btnVI.style.visibility = 'visible';
-        btnJA.style.visibility = 'visible';
+        btnVI.style.display = 'block';
+        btnJA.style.display = 'block';
     }
 
     async function callGemini(text, source, target) {
-        document.getElementById('status').innerText = "⏳ Gemini đang xử lý...";
+        const statusLabel = document.getElementById('status');
+        const errorLog = document.getElementById('errorLog');
+        statusLabel.innerText = "⏳ Gemini đang dịch...";
         
         let prompt = "";
         if (target === 'ja') {
-            prompt = `Dịch câu này sang tiếng Nhật: "${text}". Yêu cầu: CHỈ TRẢ VỀ CHỮ HIRAGANA VÀ KATAKANA, TUYỆT ĐỐI KHÔNG DÙNG CHỮ KANJI.`;
+            prompt = `Dịch câu sau sang tiếng Nhật: "${text}". 
+            Yêu cầu quan trọng: 
+            1. Tuyệt đối KHÔNG sử dụng chữ Kanji.
+            2. Chỉ sử dụng Hiragana và Katakana.
+            3. Trả về kết quả là văn bản thuần túy, không định dạng gì thêm.`;
         } else {
-            prompt = `Dịch câu tiếng Nhật này sang tiếng Việt: "${text}". Trả về bản dịch ngắn gọn tự nhiên.`;
+            prompt = `Dịch câu tiếng Nhật sau sang tiếng Việt: "${text}". Trả về bản dịch tự nhiên nhất.`;
         }
 
         try {
@@ -119,19 +156,27 @@
             });
 
             const data = await response.json();
+
+            if (data.error) {
+                statusLabel.innerText = "❌ Lỗi API!";
+                errorLog.innerText = `Chi tiết: ${data.error.message} (${data.error.status})`;
+                errorLog.style.display = 'block';
+                return;
+            }
+
             const result = data.candidates[0].content.parts[0].text.trim();
-            
             document.getElementById('translatedText').innerText = result;
-            document.getElementById('status').innerText = "✅ Xong!";
+            statusLabel.innerText = "✅ Đã dịch xong!";
             
-            // Phát âm
+            // Phát âm âm thanh
             const utterance = new SpeechSynthesisUtterance(result);
             utterance.lang = target === 'ja' ? 'ja-JP' : 'vi-VN';
             window.speechSynthesis.speak(utterance);
 
         } catch (err) {
-            document.getElementById('status').innerText = "Lỗi API Gemini!";
-            console.error(err);
+            statusLabel.innerText = "❌ Lỗi kết nối mạng!";
+            errorLog.innerText = err.message;
+            errorLog.style.display = 'block';
         }
     }
 </script>
